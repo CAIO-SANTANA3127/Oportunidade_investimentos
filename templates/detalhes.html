@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block title %}{{ segmento.Nome }} - Investment Opportunities{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <a href="/" class="btn btn-sm btn-outline-primary mb-3">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+        <h1>{{ segmento.Nome }}</h1>
+        <p class="text-muted">{{ segmento.Descricao }}</p>
+    </div>
+</div>
+
+<!-- Abas de Conteúdo -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-metricas" data-bs-toggle="tab" data-bs-target="#metricas" type="button">
+            <i class="fas fa-chart-bar"></i> Métricas
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-grafico" data-bs-toggle="tab" data-bs-target="#grafico" type="button">
+            <i class="fas fa-chart-line"></i> Gráfico
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-indices" data-bs-toggle="tab" data-bs-target="#indices" type="button">
+            <i class="fas fa-list"></i> Índices Inclusos
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-oportunidades" data-bs-toggle="tab" data-bs-target="#oportunidades" type="button">
+            <i class="fas fa-lightbulb"></i> Oportunidades
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- Aba: Métricas -->
+    <div class="tab-pane fade show active" id="metricas" role="tabpanel">
+        <div class="row">
+            {% if metricas %}
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-arrow-trending-up"></i> Retorno Médio
+                        </div>
+                        <div class="card-body text-center">
+                            <div style="font-size: 3rem; font-weight: bold; color: {% if metricas['RetornoMedio'] >= 0 %}#28a745{% else %}#dc3545{% endif %};">
+                                {{ "%.2f"|format(metricas['RetornoMedio']) }}%
+                            </div>
+                            <p class="text-muted">Variação média do período analisado</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-wave-square"></i> Volatilidade Média
+                        </div>
+                        <div class="card-body text-center">
+                            <div style="font-size: 3rem; font-weight: bold; color: #0056b3;">
+                                {{ "%.2f"|format(metricas['VolatilidadeMedia']) }}%
+                            </div>
+                            <p class="text-muted">Desvio padrão das variações</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-arrow-up"></i> Preço Máximo
+                        </div>
+                        <div class="card-body text-center">
+                            <div style="font-size: 2rem; font-weight: bold; color: #28a745;">
+                                ${{ "%.2f"|format(metricas['PrecoMaximo']) }}
+                            </div>
+                            <p class="text-muted">Maior preço registrado</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-arrow-down"></i> Preço Mínimo
+                        </div>
+                        <div class="card-body text-center">
+                            <div style="font-size: 2rem; font-weight: bold; color: #dc3545;">
+                                ${{ "%.2f"|format(metricas['PrecoMinimo']) }}
+                            </div>
+                            <p class="text-muted">Menor preço registrado</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-volume-high"></i> Volume Total
+                        </div>
+                        <div class="card-body text-center">
+                            <div style="font-size: 2rem; font-weight: bold; color: #0056b3;">
+                                {{ "{:,}".format(metricas['VolumeTotal']|int) }}
+                            </div>
+                            <p class="text-muted">Volume total de transações no período</p>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Dados insuficientes para calcular métricas
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Aba: Gráfico -->
+    <div class="tab-pane fade" id="grafico" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-md-6">
+                        <i class="fas fa-chart-line"></i> Evolução de Preços
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <select id="periodoGrafico" class="form-select form-select-sm" style="width: auto; display: inline-block;">
+                            <option value="30">Últimos 30 dias</option>
+                            <option value="90" selected>Últimos 90 dias</option>
+                            <option value="180">Últimos 6 meses</option>
+                            <option value="365">Último ano</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="graficoPrecas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Aba: Índices -->
+    <div class="tab-pane fade" id="indices" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-list"></i> Índices Inclusos neste Segmento
+            </div>
+            <div class="card-body">
+                {% if indices %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ticker</th>
+                                    <th>Descrição</th>
+                                    <th class="text-end">Total Registros</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for indice in indices %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ indice[1] }}</strong>
+                                        </td>
+                                        <td>{{ indice[2] }}</td>
+                                        <td class="text-end">
+                                            <span class="badge bg-info">{{ "{:,}".format(indice[3]|int) }}</span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Nenhum índice associado a este segmento
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Aba: Oportunidades -->
+    <div class="tab-pane fade" id="oportunidades" role="tabpanel">
+        <div id="containerOportunidades">
+            {% if oportunidades %}
+                <div class="row">
+                    {% for opp in oportunidades %}
+                        <div class="col-lg-6 mb-4">
+                            <div class="card border-left-primary">
+                                <div class="card-header">
+                                    <div class="row">
+                                        <div class="col">
+                                            <h5 class="mb-0">{{ opp.titulo }}</h5>
+                                        </div>
+                                        <div class="col-auto">
+                                            {% if opp.tipo == 'COMPRA' %}
+                                                <span class="badge badge-tipo badge-compra">COMPRA</span>
+                                            {% elif opp.tipo == 'VENDA' %}
+                                                <span class="badge badge-tipo badge-venda">VENDA</span>
+                                            {% else %}
+                                                <span class="badge badge-tipo badge-hold">HOLD</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">{{ opp.descricao }}</p>
+                                    
+                                    <div class="row mt-3">
+                                        <div class="col-6">
+                                            <small class="text-muted">Potencial Retorno</small>
+                                            <div style="font-size: 1.5rem; font-weight: bold; color: {% if opp.potencial_retorno >= 0 %}#28a745{% else %}#dc3545{% endif %};">
+                                                {{ "%.2f"|format(opp.potencial_retorno) }}%
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Nível de Confiança</small>
+                                            <div style="font-size: 1.5rem; font-weight: bold; color: #0056b3;">
+                                                {{ "%.0f"|format(opp.confianca * 100) }}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-3">
+                                        <small class="text-muted">Risco</small>
+                                        <div class="risco-box {% if opp.nivel_risco == 'BAIXO' %}risco-baixo{% elif opp.nivel_risco == 'MEDIO' %}risco-medio{% else %}risco-alto{% endif %}">
+                                            {{ opp.nivel_risco }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Nenhuma oportunidade identificada para este segmento no momento
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let chartGrafico = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('periodoGrafico').addEventListener('change', atualizarGrafico);
+    
+    // Carregar gráfico quando a aba é aberta
+    document.getElementById('tab-grafico').addEventListener('shown.bs.tab', function() {
+        if (!chartGrafico) {
+            atualizarGrafico();
+        }
+    });
+});
+
+async function atualizarGrafico() {
+    const dias = document.getElementById('periodoGrafico').value;
+    
+    try {
+        const response = await axios.get(`/api/segmento/{{ segmento.IdSegmento }}/grafico?dias=${dias}`);
+        const dados = response.data;
+        
+        if (!dados || Object.keys(dados).length === 0) {
+            alert('Sem dados disponíveis para este período');
+            return;
+        }
+        
+        const ctx = document.getElementById('graficoPrecas').getContext('2d');
+        
+        // Preparar datasets
+        const cores = [
+            '#0056b3', '#dc3545', '#28a745', '#ffc107', '#17a2b8',
+            '#6f42c1', '#e83e8c', '#fd7e14', '#20c997', '#6c757d'
+        ];
+        
+        const datasets = [];
+        let colorIndex = 0;
+        
+        for (const [ticker, dados_ticker] of Object.entries(dados)) {
+            datasets.push({
+                label: ticker,
+                data: dados_ticker.precos,
+                borderColor: cores[colorIndex % cores.length],
+                backgroundColor: `${cores[colorIndex % cores.length]}20`,
+                borderWidth: 2,
+                tension: 0.3,
+                fill: false,
+                pointRadius: 0,
+                pointHoverRadius: 6
+            });
+            colorIndex++;
+        }
+        
+        // Obter rótulos (datas)
+        const primeiroTicker = Object.keys(dados)[0];
+        const labels = dados[primeiroTicker].datas;
+        
+        // Destruir gráfico anterior se existir
+        if (chartGrafico) {
+            chartGrafico.destroy();
+        }
+        
+        // Criar novo gráfico
+        chartGrafico = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    },
+                    title: {
+                        display: true,
+                        text: `Evolução de Preços - Últimos ${dias} dias`
+                    }
+                },
+                scales: {
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Preço'
+                        }
+                    }
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Erro ao carregar gráfico:', error);
+        exibirNotificacao('Erro ao carregar dados do gráfico', 'danger');
+    }
+}
+</script>
+{% endblock %}
